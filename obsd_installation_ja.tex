@@ -1,0 +1,1502 @@
+\documentclass[a4paper]{jarticle}
+
+% \usepackage{moreverb}
+
+%--余白の設定
+\setlength{\topmargin}{15mm}
+\addtolength{\topmargin}{-1in}
+\setlength{\oddsidemargin}{20mm}
+\addtolength{\oddsidemargin}{-1in}
+\setlength{\evensidemargin}{15mm}
+\setlength{\evensidemargin}{-1in}
+\setlength{\textwidth}{170mm}
+\setlength{\textheight}{254mm}
+\setlength{\headsep}{0mm}
+\setlength{\headheight}{0mm}
+\setlength{\topskip}{0mm}
+
+\begin{document}
+\title{OpenBSD インストールの手引き}
+\date{}
+\maketitle
+
+\section{OpenBSD インストール手順の要約}
+
+しっかりした柔軟性のあるインストール手順が OpenBSD にはあります、そして OpenBSD はフロッ
+ピー・ディスク一枚でインストールすることもできます。細かいところでは、ちょっとした違い
+がありますけれどもほとんどのプラットフォームには類似したインストール手順があります。
+CD-ROM そして FTP サイト上の（たとえば、i386/INSTALL.i386、mak68k/INSTALL.mac68k、また
+はspark/INSTALL.spark というディレクトリです）プラットホーム・ディレクトリのなかにある
+プラットフォーム毎に特化されたインストール文書を読むことを、どんな場合においても、強く
+推奨します。
+
+ロード済みの RAM ディスクに埋め込まれてある、たくさんのユーティリティーとインストール用
+スクリプトがいっしょに付いている特別なカーネルが、OpenBSDインストールの過程では、用いら
+れます。このカーネルがブートされると、ロード済みの RAM ディスクとは別のソースから、圧縮
+された tarファイルが解凍されます。このインストール用カーネルをブートする方法はいくつか
+あります。
+
+\begin{description}
+ \item[フロッピー・ディスク] 別の UNIX ライクなシステム、あるいは Windows 上でインストー
+      ル用のフロッピー・ディスクを作成するのに向いている、フロッピー・ディスク・イメー
+      ジが提供されています。典型的なファイル名はfloppy45.fs です。もっとも、いくつかの
+      プラットフォームでは、複数のフロッピー・イメージが入手可能となっています。
+ \item[CD-ROM] ブート可能な CD-ROM 作成を考慮して、いくつかのプラットフォーム上では、
+      CD-ROM イメージ（cd45.iso は起動のみが目的、install45.iso は完全なインストール
+      を目的とします）が提供されています。
+ \item[既存のパーティション] アップグレードそして再インストールのために、RAM ディスク・
+      カーネルを既存のパーティションから起動することができます。
+ \item[ネットワーク] 二、三のプラットフォームはネットワーク越しに起動することをサポー
+      トしています（たとえば、PXE を使う、あるいは他のネットワーク・ブート）。
+ \item[ファイル・システム・イメージのディスクへの書き込み(miniroot)] 既存のパーティショ
+      ンに書き込むことができる、それに続いて起動できる、ファイル・システム・イメージ。
+ \item[ブート可能なテープ] 二、三のプラットフォームでは、テープから起動することもサ
+      ポートされています。こういったテープは、INSTALL.platform の指示に従って、作成する
+      ことができます。
+\end{description}
+
+各プラットフォームがあらゆるブート（起動）の選択肢をサポートしているわけではありません。
+
+\begin{description}
+ \item[alpha] フロッピー、CD-ROM、ネットワーク、フロッピー・イメージのディスクへの書き
+      込み。
+ \item[amd64] フロッピー、CD-ROM、ネットワーク。
+ \item[armish] マシンによって異なります。
+ \item[hp300] CD-ROM、ネットワーク。
+ \item[hppa] ネットワーク。
+ \item[i386] フロッピー、CD-ROM、ネットワーク。
+ \item[landisk] miniroot、他のコンピュータを利用したインストール。
+ \item[mac68k] Mac OS 上で走るユーティリティーを利用するブート。詳しくは、
+      INSTALL.mac68k を見てください。
+ \item[macppc] CD-ROM、ネットワーク。
+ \item[mvme68k] ネットワーク、ブート可能なテープ。
+ \item[mvme88kE] ネットワーク、ブート可能なテープ。
+ \item[sparc] フロッピー、CD-ROM、ネットワーク、既存のスワップ・パーティションへのイメー
+      ジの書き込み、ブート可能なテープ。
+ \item[spark64] フロッピー（U1/U2 のみ）、CD-ROM、ネットワーク、既存のパーティションへ
+      のイメージの書き込み。
+ \item[vax] フロッピー、ネットワーク。
+ \item[zaurus] Linux パーティションから bsd.rd をブートしてください。詳しくは、
+      INSTALL.zaurus を見てください。
+\end{description}
+
+すべてのプラットフォームもまた bsd.rd を利用してアップグレードあるいは再インストールす
+ることができます。
+
+インストール・カーネルを起動すれば、インストール・ファイルひと揃いをどこから得るかとい
+う選択肢を、あなたは手にします。重ねていいますが、すべてのプラットフォームがすべての選
+択肢をサポートしているわけではありません。
+
+\begin{description}
+ \item[CD-ROM] もちろん、オフィシャルの CD-ROM セットを用いることが望ましいのですが、他
+      方、install45.iso を利用することもできますし、自分用にその CD-ROM を作ることもで
+      きます。
+ \item[FTP] OpenBSD の FTP ミラー・サイトのひとつ、あるいはインストールするファイルを擁
+      する自分の FTP サーバのどちらかを選べます。
+ \item[HTTP] OpenBSD の HTTP ミラー・サイトのひとつ、あるいはインストールするファイルを
+      擁する自分のウェブ・サーバのどちらかを選べます。
+ \item[ローカルのディスク・パーティション] 多くの場合、ローカル・ディスク上の他のパーティ
+      ションからファイルひと揃いをインストールすることができます。
+ \item[NFS] 二、三のプラットフォームは、インストールするファイルにマウントされた NFS の
+      利用をサポートしています。
+ \item[テープ] インストールするファイルの一式は、サポート対象となっているテープからも読
+      み込むことができます。テープの作成の詳細はINSTALL.platform 文書に記されています。
+\end{description}
+
+
+\section{インストールまえの確認事項}
+
+インストールを開始するまえに、どのあたりで終了するのかについて少し考えるべきでしょう。
+以下の項目については、少なくとも、知っておかなければならないでしょう。
+
+\begin{itemize}
+ \item マシンの名前。
+ \item インストール済みのハードウェア、空いているハードウェア。
+  \begin{itemize}
+   \item あなたのプラットフォームが使うハードウェアの互換性が記載された頁で、互換性を検
+         証してください。
+   \item ISA であれば、ハードウェアの設定を知り、そしてそれらの設定がOpenBSD の要求を満
+         たしていることを確認する必要があるでしょう。
+  \end{itemize}
+ \item 利用すべきインストール手段（CD-ROM、FTP等）。
+ \item 重大なバグが見つかったとすれば、どのようにそのシステムにパッチをあてるべきでしょう
+ か。
+  \begin{itemize}
+   \item 局所的なバグとわかったなら、ソース・ツリーとそのツリーをビルドするための充分な
+         空きスペースが必要になるでしょう。
+   \item もしくは、他のマシンにアクセスして、パッチ適用済みのリリースをビルドしなければ
+         ならないでしょう。
+  \end{itemize}
+ \item 希望するディスク領域の見取り図。
+ \begin{itemize}
+  \item 既存のデータを他のどこかにセーヴする必要があるのではないでしょうか。
+  \item OpenBSD を他の OS と共存させるのでしょうか。もしそうであれば、両方ともブートさ
+        せるのでしょうか。「ブート・マネージャー」をインストールする必要があるのではな
+        いでしょうか。
+  \item ディスク全体を OpenBSD に使うのでしょうか、または既存のパーティション・OS （あ
+        るいは将来インストールする OS のためのスペース）を保持するのでしょうか。
+  \item OpenBSD に割り当てられたディスクの箇所を、どのように、サブ・パーティションを切
+        り配分するつもりですか。
+ \end{itemize}
+ \item DHCP を使っていない場合の、ネットワークの設定。
+  \begin{itemize}
+   \item ドメイン名。
+   \item ドメイン・ネーム・サーバ（DNS）のアドレス。
+   \item IP アドレスと NIC 毎のサブネット・マスク・アドレス。
+   \item ゲイトウェイ・アドレス。
+  \end{itemize}
+ \item X Window システムを走らせるのでしょうか。
+\end{itemize}
+
+
+\section{ブート用の OpenBSD インストール・メディアの作成}
+
+例として、i386 と sparc に使用することができるインストール用のイメージに
+目を向けてみましょう。
+
+i386 プラットフォームには六つの異なるインストール用のディスク・イメージ
+があり、そのイメージは下記から選べます。
+
+\begin{itemize}
+ \item \textbf{floppy45.fs}（デスクトップ PC 用）は、多くの PCI と ISA NIC、IDE と単純
+       な SCSI アダプタと二、三の PMCIA 補助をサポートしています。フロッピーからブートする場
+       合、ほとんどのユーザーはこのイメージを利用するでしょう。
+ \item \textbf{floppyB45.fs}（サーバ用）は、多くの RAID コントローラ、そして一般的では
+       ない二、三の SCSI アダプタをサポートします。しかしながら、標準的な多くの SCSI
+       アダプタと多くの EISA と ISA の NIC のサポートは除かれています。
+ \item \textbf{floppyC45.fs}（ラップトップ用）は、多くのラップトップに見られる CardBus
+       と PMCIA デバイスをサポートします。
+ \item \textbf{cd45.iso}は、ほとんどのプラットフォームでもっとも普及している CD-ROM 作
+       成ソフトウェアで、ブート用の CD-ROM を作成することに利用できる、ISO9660 イメー
+       ジです。
+ \item \textbf{cdemu45.iso}は、「フロッピー・エミュレーション」、2.88M のフロッピー・
+       イメージを利用する、ISO9660 イメージです。このイメージを使うひとがほとんどいな
+       いことを望みます。たいていは cd45.iso イメージを使えばいいでしょう。cd45.iso で
+       うまくいかない場合、cdemu45.iso を利用しましょう。
+ \item \textbf{install45.iso}は、すべての標準的なインストールするファイルを含んでいる
+       ISO9660 イメージです。スタンド・アローンで OpenBSD のインストールを行うことがで
+       きる CD を作成するために、このイメージ・ファイルを利用することができます。
+\end{itemize}
+
+あるインストール用ディスクが SCSI アダプタをサポートのために要求される状況、そして他
+のインストール用ディスクがネットワーク・アダプタのサポートのために要求される状況が、た
+しかに、あるかもしれません。幸いにも、こういう出来事はめったにありませんし、通常は対
+処できます。
+
+sparc プラットフォームには四つの異なるインストール用ディスク・イメージがあり、そのイメー
+ジは下記から選べます。
+
+\begin{itemize}
+ \item \textbf{floppy45.fs}は、フロッピー・ディスク・ドライブ付きのシステムをサポートし
+       ます。
+ \item \textbf{cd45.iso}は、CD-ROM ドライブ付きの SPARK システムをブートするための自分
+       用の CD を作るのに適した ISO イメージです。
+ \item \textbf{miniroot45.fs}は、スワップ・パーティションに書き込め、ブートすることが
+       できます。
+ \item \textbf{install45.iso}は、すべての標準的なインストールするファイルを含んでいる
+       ISO9660 イメージです。スタンド・アローンで OpenBSD のインストールを行うことがで
+       きる CD を作成するために、このイメージ・ファイルを利用することができます。
+\end{itemize}
+
+
+\subsection{Unix 上でのフロッピーの作成}
+
+フォーマットされたフロッピーを作成するには、不良セクタのチェックをする、フォーマットを
+行う fdformat(1) コマンドを使ってください。
+
+\begin{verbatim}
+  # fdformat /dev/rfd0c
+  Format 1440K floppy `/dev/rfd0c'? (y/n): y
+  Processing VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV done.
+\end{verbatim}
+
+上記の例のような出力を得られたなら、そのフロッピー・ディスクは大丈夫です。しかしながら、
+「V」の列すべてが出力されなかった場合、そのディスクはたぶん不良品ですから、新しいディス
+クを試しましょう。
+
+いくつかの UNIX ライクなシステムにはフロッピーをフォーマットするのに異なるコマンドがあ
+ることに注意してください。あなたが使っているシステムの文書を参照して、正確な手順を調べ
+てください。
+
+不良でないフォーマットされたフロッピーを得れば、インストール用イメージをフロッピーに書
+き込めます。このために、dd(1) ユーティリティを利用できます。
+
+\begin{verbatim}
+  # dd if=floppy45.fs of=/dev/rfd0c bs=32k
+\end{verbatim}
+
+イメージを書き込んだらすぐに、コピーされたイメージがオリジナルと同一であることを、
+cmp(1) コマンドで、確認してください。ディスケット（フロッピー・ディスク）とイメージが完
+全に一致したなら、別のプロンプトが画面に現れるでしょう。
+
+
+\subsection{Windows 上でのフロッピーの作成}
+
+ウインドウズ環境でのインストール用イメージのフロッピー・ディスクへの書き込み方を、この
+セクションでは説明します。どの FTP ミラー・サイトでも、tools ディレクトリから、下記のツー
+ルを入手できます。
+
+ウインドウズ上でフロッピー作成の準備をするには、ウインドウズ用のフォーマット・ツールを
+使って、そのフロッピー・ディスクに不良セクタがないことを、先ず、点検してください。イン
+ストール用イメージを準備したフロッピーに書き込むのに、ntrw.exe を利用できます。
+
+\textit{ntrw} の使用例は以下のとおりです。
+
+\begin{verbatim}
+  C:\> ntrw floppy45.fs a:
+  3.5", 1.44MB, 512 bytes/sector
+  bufsize is 9216
+  1474560 bytes written
+\end{verbatim}
+% "
+
+\subsection{CD-ROM の作成}
+
+cd45.iso あるいは install45.iso ファイルを利用することで、CD-ROM を作ることができます。
+正確な詳細は、ここでは、ツールの文書類にまかせますので、それを読んで、楽に使えるツール
+を選んでください。
+
+OpenBSD にあるツールをいくつか挙げると、
+
+\begin{itemize} 
+ \item \textbf{mkhybrid(8)}
+ \item \textbf{cdrecord}は、OpenBSD のパッケージそしてポートのシステムの cdrtool のセッ
+ トの一部です。
+ \item \textbf{cdio(1)}の「track at once」(tao)という記録オプション。
+\end{itemize}
+
+
+\section{OpenBSD インストール用メディアの起動}
+
+\subsection*{i386/amd64 の起動}
+
+i386 そして amd64 プラットフォーム上でのインストール用イメージの起動においては、ほとん
+どのひとにとって目新しいことは何もありません。フロッピー・ディスクを使うのであれば、フ
+ロッピー・ドライブにフロッピーを単に挿入してシステムを起動してください。CD から起動した
+いのであれば、システムの BIOS 設定画面に行って、CD からの起動を許可するように起動オプショ
+ンを設定してください。いくつかの古い BIOS にはこのようなオプションはありませんから、そ
+のときは、フロッピーを使ってインストール用イメージを起動しなければならなくなります。で
+も、心配することはありません。たとえフロッピーから起動するにせよ、OpenBSD がサポートし
+ているのであれば（つまり、たいていの IDE ドライバであれば）、まだ CD からインストール
+することはできます。
+
+既存の OpenBSD パーティションから bsd.rd を起動したり、ネットワーク越しに PXE ブート・
+プロセスを利用したりすることで、インストールすることもできます。
+
+\subsection*{spark/spark64 の起動}
+
+\begin{quotation}
+ \noindent\textbf{注意事項:} spark64 プラットフォームでは、SBus マシンのみフロッピーから起動できま
+す。
+\end{quotation}
+
+フロッピーから起動するには、OpenBSD のインストール用イメージが入ったフロッピー・ディス
+クをフロッピー・ドライブのなかに入れてください。そして以下のコマンドを用いてフロッピー
+から起動してください。
+
+\begin{verbatim}
+  ok boot floppy
+\end{verbatim}
+
+CD-ROM から起動するには、OpenBSD の CD-ROM をドライブに入れてください。通常では、
+「boot cdrom」とブート・プロンプトから、Sun システムの CD-ROM ドライブから、起動できま
+す。
+
+\begin{verbatim}
+  ok boot cdrom
+\end{verbatim}
+
+もちろん、これは新しいコマンド・モードで動くだけでしょう。古いコマンド・モード（右矢
+印）である場合は、「n」を打って新しいコマンド・モードに移動してください。sun4c 以前の
+古い sparc を使っているのであれば、それには新しいコマンド・モードはおそらくありません。
+複数の CD-ROM デバイスがあるのであれば、的確なデバイスから起動しなければなりません。新
+しいコマンド・モードから「probe-scsi」（あるいは、新しいシステム上の「probe-ide」）を
+試してみてください。
+
+\begin{verbatim}
+  ok probe-scsi
+
+  Target 0
+    Unit 0   Disk     QUANTUM LIGHTNING 365S
+  Target 1
+    Unit 0   Removable Disk     QUANTUM EMPIRE_1080S
+  Target 3
+    Unit 0   Removable Disk     Joe's CD-ROM
+\end{verbatim}
+
+どの CD-ROM から起動したいかを指定してください。Target の番号に注意してください。
+
+\begin{verbatim}
+  ok boot /sbus/esp/sd@X,0
+\end{verbatim}
+
+
+\section{インストールの実行}
+
+\subsection{インストールの開始}
+
+ブートの方法が何であれ、そろそろ実際に起動してみます。ブートの過程では、OpenBSD のイン
+ストールに利用されるカーネルやプログラムのすべてはメモリ内にロードされます。起動の際に
+頻繁に見られる問題のほとんどはフロッピー・ディスクの不良かドライブの配置構造からくるも
+のです。起動用フロッピー内に詰め込み過ぎであったりしたときです。どのような不良箇所でも
+問題を引き起こしかねません。
+
+OpenBSD インストールの過程の最中いつでも、進行中のインストールの試みを、CTRL-C キーを
+叩くことで、中断することができますし、シェル・プロンプトを走らせて再起動する必要もなく、
+リスタートすることもできます。
+
+起動が成功したなら、たくさんのテキスト・メッセージがスクロールされていくところが見える
+でしょう。このテキストは、多くのアーキテクチャーでは青地に白文字で表示されますが、これ
+は dmesg で、どんなデバイスが見つかったか、そしてそのデバイスはどこにあるのか、というカー
+ネルからの情報を表示してくれます。このテキストの内容を忘れてしまったとしても心配ありま
+せん。そのコピーが /var/run/dmesg に保存されるからです。
+
+それから、以下のように表示されます。
+
+\begin{verbatim}
+  root on rd0a swap on rd0b dump on rd0b
+  erase ^?, werase ^W, kill ^U, intr ^C, status ^T
+  (I)nstall, (U)pgrade or (S)hell? i
+\end{verbatim}
+
+ここで、最初の懸案事項に到達しました。ほとんどの場合、ここで、三つのオプション（選択
+肢）が表示さます。
+
+\begin{itemize}
+ \item \textbf{Install:} OpenBSD をシステム上にロードして、そこに何があったとしても上書きしま
+ す。ここで注意すべきであるのは、いくつかのパーティションは、たとえば /home のようなパー
+ ティションは、このインストールの過程において手つかずのままにしておくことが可能だ、とい
+ うことです。しかしその他の点では、他のすべてのパーティションは上書きされるものと思っ
+ ておいてください。
+ \item \textbf{Upgrade:} 新しい一揃いのインストール用ファイルを新しいマシンにインストールし
+ ますが、設定情報とユーザー・データ、追加したプログラムの上書きは行いません。ディスク
+ のフォーマットは行いませんし、/etc そして /var ディレクトリの上書きもしません。少しだ
+ け重要な注意点があります。
+ \begin{itemize} 
+  \item etc45.tgz ファイルをインストールするオプションは与えられていません。インストー
+  ル後、etc45.tgz の変更内容をシステムに手動でマージしなければ、それが完全に有効なもの
+  として働くことは期待できないでしょう。これは必要不可欠な重要なステップです。他のいく
+  つかの主要なサービスが始動しないかもしれないからです。
+  \item アップグレード・プロセスはリリースの順番を飛ばして行うようには設計されていませ
+  ん！リリース順を飛ばしたアップグレードはしばしばうまくいくとはいえ、サポートはされてい
+  ないのです。OpenBSD 4.5 への移行の際、4.4 から 4.5 へのアップグレードのみがサポート
+  されています。古いヴァージョンからアップグレードしなければならない場合は、中間のヴァー
+  ジョンから先ずインストールしてください。また、あまりにも時代遅れのヴァージョンのシス
+  テムであるなら、完全な再インストールを考慮してみてください。
+ \end{itemize}
+ 各リリース間のアップグレードについてのより多くの情報は、\textbf{「OpenBSD Upgrade
+  Guide 4.5」}で得ることができます。
+ \item \textbf{Shell:} ときには、標準のカーネルを起動しない
+ ような（あるいは起動するはずのない）システムに対して修復あるいはメンテナンスを行わなけ
+ ればならないことがあります。この Shell オプションはシステムに対してメンテナンスを行う
+ ことを許可するものです。若干の数の重要なユーティリティーがブート・メディア上で利用する
+ ことができます。
+\end{itemize}
+
+場合によっては、「Upgrade」オプションが記載されないことがあるでしょう。\textit{flag
+day} イベントが起こったあとなら、直接的なアップグレードを行うことは可能ではなくなりま
+す。その場合、スクラッチから再インストールしなければなりません。
+
+この下の例では、インストールを行っていますが、しかしアップグレード・プロセスも似たようなもので
+す。
+
+\begin{verbatim}
+  Welcome to the OpenBSD/i386 4.5 install program.
+
+  This program will help you install OpenBSD. At any prompt except password
+  prompts you can escape to a shell by typing '!'. Default answers are shown
+  in []'s and are selected by pressing RETURN.  At any time you can exit this
+  program by pressing Control-C, but exiting during an install can leave your
+  system in an inconsistent state.
+
+  Terminal type: [vt220] Enter
+  kbd(8) mapping? ('L' for list) [none] Enter
+\end{verbatim}
+
+ほとんどの場合、デフォルトの（初期設定されている）ターミナルのタイプには適切なものが割
+り当てられています。しかしながら、インストールを行うためにシリアル・コンソールを使用し
+ているのであれば、デフォルトのターミナルを選ばずに、適切なものを入力して答えてください。
+
+キーボードのエンコーディング表を選ばなかったならば、US キーボードのレイアウトだ、と仮定
+されることになります。
+
+\begin{verbatim}
+  IS YOUR DATA BACKED UP? As with anything that modifies disk contents, this
+  program can cause SIGNIFICANT data loss.
+
+  It is often helpful to have the installation notes handy. For complex disk
+  configurations, relevant disk hardware manuals and a calculator are useful.
+
+  Proceed with install? [no] y
+\end{verbatim}
+
+ここでデフォルトを選択すると、シェル・プロンプトへと移動します。
+
+インストールに関する注釈・注意事項は CD そして FTP サーバ上の、INSTALL.$<$plat$>$ ファイル
+（ $<$plat$>$ の箇所は使用しているプラットフォーム名、たとえば、i386 になります）内にありま
+す。
+
+\subsection{ディスクのセットアップ}
+
+\begin{quotation}
+ \noindent\textbf{重要な注意事項:} 大容量のハード・ディスク（お使いのコンピュータが製造された当
+時のハード・ディスク凌ぐ大きな容量のもの）のユーザーは\textbf{「14.7 - OpenBSD を大容量ドライ
+ブで使うことに関して、どのような問題がありますか？」}を読んでから先に進むべきでしょう。
+\end{quotation}
+
+OpenBSD でのディスクのセットアップはプラットフォーム間で少しばかり異なっています。i386
+と amd64、macppc、zaurus、armish の場合、ディスクのセットアップは二段階で行われます。
+OpenBSD ではハード・ディスクのスライス（切り分け）は fdisk(8) を使って決定されます。そ
+れから、そのときのスライスは disklabel(8) を使うことで OpenBSD パーティションとしてさら
+に細分化されます。
+
+一部のユーザーはここで使われている専門用語にちょっとばかり混乱するかもしれません。ふた
+つの異なる意味合いで「パーティション」という単語を使っているように見えるでしょう。この
+ように気付くことはまちがっていません。上記の OpenBSD プラットフォームではパーティション
+は二層になっています。第一の層は、オペレーティング・システムのパーティション、すなわち、
+ひとつのコンピュータ上の複数の OS がその OS 自身のディスク上の領域をどのように区切って
+いるか、を示すもの、としてみなすことができます。そして、第二層は、OpenBSD のパーティショ
+ンが特定のファイル・システムへとどのように細分化されているか、を示すものです。このディ
+スクのレイアウト・システムを利用している DOS、WINDOWS、そしてどのような OS からでも、こ
+の第一の層はひとつのディスク領域として見ることができます。OpenBSD そして OpenBSDのファ
+イル・システムを直接読み込むことができる OS からのみ、第二層のパーティショニングを見る
+ことができます。
+
+\begin{verbatim}
+  Cool!  Let's get to it.
+
+  You will now initialize the disk(s) that OpenBSD will use. To enable all
+  available security features you should configure the disk(s) to allow the
+  creation of separate filesystems for /, /tmp, /var, /usr, and /home.
+
+  Available disks are: wd0.
+  Which one is the root disk? (or done) [wd0] Enter
+\end{verbatim}
+
+root disk とはシステムを起動するディスクのことで、ふつうは、スワップ・スペースが常駐し
+ている場所になります。IDE ディスクは wd0、wd1 などとして表示されます。SCSI ディスクと
+RAID デバイスは sd0、sd1 などとして表示されます。OpenBSD が見つけられ得るディスクはす
+べて、ここで、リストアップされます。表示されないドライブがあるのであれば、それらのドラ
+イブはサポートされていないものか、または不適切な設定されたハードウェアです。
+
+\begin{verbatim}
+  Do you want to use *all* of wd0 for OpenBSD? [no] Enter
+\end{verbatim}
+
+この質問に「yes」と答えれば、ディスク全体が OpenBSD に割り当てられるでしょう。これで、
+標準的なマスター・ブート・レコードとパーティション・テーブルがディスクに書き出されるこ
+とになります。ひとつのパーティション、ディスク全体の容量、が OpenBSD パーティションの型
+式にと設定され、起動可能な領域として印付けされます。これは、OpenBSD 製品のほとんどのユー
+ザーにとっては一般的な選択です。しかしながら、一部のシステム上では、このように、ディス
+ク全体の領域を使って OpenBSD をインストールすることができません。多くの Compaq、多くの
+ラップトップ、一部の Dell のシステムでは「maintenance」あるいは「Suspend to Disk」パー
+ティションを使っていて、これらは手付かずのまま残すべきとなっているのです。システムに削
+除を望まないパーティションがあるのであれば、上記の質問に「yes」と答えないでください。他
+方で、いままで使用されていなかった真新しいディスクがシステムにあるのなら、おそらくここ
+で「yes」と答えればいいでしょう。従って、この場合、マスター・ブート・レコードを手に入れ
+て適切に署名することになります。
+
+この例では、既存の Windows 2000 パーティションと OpenBSD とでディスクを分割することを
+想定しているのですから、デフォルトである「no」を選び、fdisk(8) プログラムに入ることに
+なります。fdisk(8) に関するより多くの情報を\textbf{「14.2 - fdisk(8) の使用」}で得ることもでき
+ます。
+
+\begin{quotation}
+ \noindent\textbf{注意事項:} 「Do you want to use *all* of wd0 for OpenBSD?」という質問
+に「Y」と答えたのであれば、あるいは fdisk を使えないプラットフォーム（たとえば、
+sparc64 )を使っているのであれば、このステップに進むことなく、むしろ\textbf{「ディスク・
+レーベルの作成」}まで直接飛んでください。
+\end{quotation}
+
+\begin{verbatim}
+  You will now create a single MBR partition to contain your OpenBSD data. This
+  partition must have an id of 'A6'; must *NOT* overlap other partitions; and
+  must be marked as the only active partition.
+
+  The 'manual' command describes all the fdisk commands in detail.
+
+  Disk: wd0       geometry: 2434/255/63 [39102336 Sectors]
+  Offset: 0       Signature: 0xAA55
+              Starting         Ending         LBA Info:
+   #: id      C   H   S -      C   H   S [       start:        size ]
+  -------------------------------------------------------------------------------
+  *0: 0B      0   1   1 -    195 254  63 [          63:     3148677 ] Win95 FAT-32
+   1: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+   2: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+   3: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+  Enter 'help' for information
+  fdisk: 1> help
+          help            Command help list
+          manual          Show entire OpenBSD man page for fdisk
+          reinit          Re-initialize loaded MBR (to defaults)
+          setpid          Set the identifier of a given table entry
+          disk            Edit current drive stats
+          edit            Edit given table entry
+          flag            Flag given table entry as bootable
+          update          Update machine code in loaded MBR
+          select          Select extended partition table entry MBR
+          swap            Swap two partition entries
+          print           Print loaded MBR partition table
+          write           Write loaded MBR to disk
+          exit            Exit edit of current MBR, without saving changes
+          quit            Quit edit of current MBR, saving current changes
+          abort           Abort program without saving current changes
+  fdisk: 1>
+\end{verbatim}
+
+詳述に価するコマンドはほんの少しだけです。
+
+\begin{itemize}
+ \item \textbf{r} または \textbf{reinit:} 既存のパーティション・テーブルを消去して、ディ
+       スク全体を覆う一個の巨大な OpenBSD パーティションを作り、そのパーティションを使
+       えるものとして印付けて、そして OpenBSD MBR コードをインストールします。「use
+       *all* of ...」という質問に「yes」ということと等価です。新しいハード・ディスク上
+       では、ほぼまちがいなく、このコマンドを使わなければならないでしょう。
+ \item \textbf{p} または \textbf{print:} 現在のパーティション・テーブルをセクタごとに
+       表示します。「p m」と打つと、メガバイト単位でのパーティション・テーブルの表示が
+       行われます。「p g」と打つと、ギガバイト単位での表示になります。
+ \item \textbf{e} または \textbf{edit:} テーブル項目の編集と修正を行います。
+ \item \textbf{f} または \textbf{flag:} 任意のパーティションを使用可能な領域、起動され
+       る領域、として印付けます。
+ \item \textbf{u} または \textbf{update:} OpenBSD ブート・コードで MBR をアップデート
+       します。既存のパーティション・テーブルの修正をしない点以外では「reinit」と似て
+       います。
+ \item \textbf{exit} または \textbf{quit:} このふたつのコマンドには注意してください。
+       「exit」と「quit」が正反対の意味をもっていたことに一部のユーザーは慣れてしまって
+       いるからです。
+\end{itemize}
+
+再度、注目すべきであるのは、エラーは、ここでは、重要なデータの損失を招くであろう、とい
+うことです。重要なデータがあるドライブで行うつもりであるなら、きちんとバックアップをとっ
+たうえで、「使い捨てにできる」余分なドライブで実験してみるだけの価値がこの作業にはある
+のかもしれません。
+
+この例のハード・ディスク・ドライブには Windows 2000 の 1.5GB パーティション（FAT ファ
+イル・システムを使用）があります。上記の表示内容から判断すると、Windows パーティション
+が 195 までのシリンダを占めていることがわかります。従って、ディスクの残りを OpenBSD
+に割り当てるには、196 のシリンダから始めることになります。既存のパーティションの開始セ
+クタ（63）とそのパーティションのサイズ（3148677）を足すことで、OpenBSD の開始セクタ
+（3148740）を計算することもできます。
+
+\begin{verbatim}
+  fdisk: 1> e 1
+              Starting         Ending         LBA Info:
+   #: id      C   H   S -      C   H   S [       start:        size ]
+  -------------------------------------------------------------------------------
+   1: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+  Partition id ('0' to disable)  [0 - FF]: [0] (? for help) a6
+  Do you wish to edit in CHS mode? [n] y
+  BIOS Starting cylinder [0 - 2433]: [0] 196
+  BIOS Starting head [0 - 254]: [0] Enter
+  BIOS Starting sector [1 - 63]: [0] 1
+  BIOS Ending cylinder [0 - 2433]: [0] 2433
+  BIOS Ending head [0 - 254]: [0] 254
+  BIOS Ending sector [1 - 63]: [0] 63
+  fdisk:*1> p
+  Disk: wd0       geometry: 2434/255/63 [39102336 Sectors]
+  Offset: 0       Signature: 0xAA55
+              Starting         Ending         LBA Info:
+   #: id      C   H   S -      C   H   S [       start:        size ]
+  -------------------------------------------------------------------------------
+  *0: 0B      0   1   1 -    195 254  63 [          63:     3148677 ] Win95 FAT-32
+   1: A6    196   0   1 -   2433 254  63 [     3148740:    35953470 ] OpenBSD
+   2: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+   3: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+  fdisk:*1> p m
+  Disk: wd0       geometry: 2434/255/63 [19093 Megabytes]
+  Offset: 0       Signature: 0xAA55
+              Starting         Ending         LBA Info:
+   #: id      C   H   S -      C   H   S [       start:        size ]
+  -------------------------------------------------------------------------------
+  *0: 0B      0   1   1 -    195 254  63 [          63:        1537M] Win95 FAT-32
+   1: A6    196   0   1 -   2433 254  63 [     3148740:       17555M] OpenBSD
+   2: 00      0   0   0 -      0   0   0 [           0:           0M] unused
+   3: 00      0   0   0 -      0   0   0 [           0:           0M] unused
+  fdisk:*1>
+\end{verbatim}
+
+fdisk が使えるプラットフォーム上では、一番目のパーティションがディスクの最初のトラック
+をスキップすること、この場合だと、63 セクタから開始すること、が重要になります。これは、
+マシンによって、ディスク・システムによって異なっています。OpenBSD パーティションがオフ
+セット 0 の地点で開始するよう作成されたなら、OpenBSD パーティションのパーティション・ブー
+ト・レコードに、このパーティション・テーブルは結局のところ上書きされてしまうでしょう。
+そうなったシステムはまだ起動可能かもしれませんが、維持することはとても困難でしょうし、
+推奨もサポートもされていません。
+
+注意すべきことは、プロンプトの表示がアステリスク（「*」）が付くように変化しているのは、
+保存されていない変更があることを知らせている、ということです。「p m」コマンドの出力か
+らわかるように、Windows パーティションは改変されていませんし、ドライブの残り領域を
+OpenBSD に割り当てることは成功していますし、重複しているパーティションもありません。準
+備は整いました。九割方は。
+
+次回の再起動時にマシンが OpenBSD を起動するようにするために、パーティションを動作可能な
+ものと印付ける作業がまだ残っています。
+
+\begin{verbatim}
+  fdisk:*1> f 1
+  Partition 1 marked active.
+  fdisk:*1> p
+  Disk: wd0       geometry: 2434/255/63 [39102336 Sectors]
+  Offset: 0       Signature: 0xAA55
+              Starting         Ending         LBA Info:
+   #: id      C   H   S -      C   H   S [       start:        size ]
+  -------------------------------------------------------------------------------
+   0: 0B      0   1   1 -    195 254  63 [          63:     3148677 ] Win95 FAT-32
+  *1: A6    196   0   1 -   2433 254  63 [     3148740:    35953470 ] OpenBSD
+   2: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+   3: 00      0   0   0 -      0   0   0 [           0:           0 ] unused
+  fdisk:*1>
+\end{verbatim}
+
+そしてこれで、変更を保存することができるようになりました。
+
+\begin{verbatim}
+  fdisk:*1> w
+  Writing MBR at offset 0.
+  wd0: no disk label
+  fdisk: 1> q
+\end{verbatim}
+
+\subsubsection*{ディスクレーベルの作成}
+
+次のステップでは、disklabel(8) を使って、OpenBSD パーティションを切り分けます。
+disklabel(8) の利用に関してのより多くの詳細は\textbf{「FAQ 14、disklabel」}で見ることが
+できます。
+
+\begin{verbatim}
+  Here is the partition information you chose:
+
+  Disk: wd0       geometry: 2586/240/63 [39100320 Sectors]
+  Offset: 0       Signature: 0xAA55
+           Starting       Ending       LBA Info:
+   #: id    C   H  S -    C   H  S [       start:      size   ]
+  ------------------------------------------------------------------------
+   0: 0B    0   1  1 -  202 239 63 [          63:     3069297 ] Win95 FAT-32
+  *1: A6  203   0  1 - 2585 239 63 [     3069360:    36030960 ] OpenBSD
+   2: 00    0   0  0 -    0   0  0 [           0:           0 ] unused
+   3: 00    0   0  0 -    0   0  0 [           0:           0 ] unused
+
+  You will now create an OpenBSD disklabel inside the OpenBSD MBR
+  partition. The disklabel defines how OpenBSD splits up the MBR partition
+  into OpenBSD partitions in which filesystems and swap space are created.
+
+  The offsets used in the disklabel are ABSOLUTE, i.e. relative to the
+  start of the disk, NOT the start of the OpenBSD MBR partition.
+
+  # Inside MBR partition 1: type A6 start 3148740 size 35953470
+  Treating sectors 3148740-39102210 as the OpenBSD portion of the disk.
+  You can use the 'b' command to change this.
+
+  Initial label editor (enter '?' for help at any prompt)
+  > ?
+  Available commands:
+    ? [command] - show help                  n [part] - set mount point
+    a [part]    - add partition              p [unit] - print partitions
+    b           - set OpenBSD boundaries     q        - quit & save changes
+    c [part]    - change partition size      r        - display free space
+    D           - reset label to default     s [path] - save label to file
+    d [part]    - delete partition           u        - undo last change
+    e           - edit drive parameters      w        - write label to disk
+    g [d | u]   - [d]isk or [u]ser geometry  X        - toggle expert mode
+    l [unit]    - print disk label header    x        - exit & lose changes
+    M           - disklabel(8) man page      z        - delete all partitions
+    m [part]    - modify partition
+
+  Suffixes can be used to indicate units other than sectors:
+          'b' (bytes), 'k' (kilobytes), 'm' (megabytes), 'g' (gigabytes)
+          'c' (cylinders), '%' (% of total disk), '&' (% of free space).
+  Values in non-sector units are truncated to the nearest cylinder boundary.
+  >
+\end{verbatim}
+
+いくつかのコマンドにだけは、ちょっとした詳しい説明が必要でしょう。
+
+\begin{itemize}
+ \item[p] - 現在のディスクレーベルをスクリーンに表示します。そして、k、または m、g
+          修飾子を使って、キロバイト、またはメガバイト、ギガバイト単位での表示も行えま
+          す。
+ \item[D] - 既存のいかなるディスクレーベルも消去して、現在の OpenBSD パーティションのみ
+          を覆う新しいデフォルトのディスクレーベルを作成します。ディスクレーベルがディ
+          スクにあったならば、そして OpenBSD パーティションがまちがったサイズで再作成さ
+          れていたなら、このコマンドは役に立つでしょう。古いディスクレーベルは削除され
+          ないかもしれませんし、混乱の原因になるかもしれません。
+ \item[m] - 既存のディスクレーベルの登録事項を更新します。このコマンドにできることを過
+          大に見積もってはいけません。「m」コマンドはディスクレーベル・パーティションの
+          サイズを修正できるだろうとはいえ、ドライブ上のファイルシステムの修正は行わな
+          いのです。このオプションを使って、魔法のように既存のパーティションがリザイズ
+          されることを期待しているのであれば、それは大容量のデータを失う早道になります。
+          しかしながら、このオプションと growfs(8) はパーティションを拡張するために使う
+          ことができます。
+\end{itemize}
+
+ディスクを適切に切り分けることは大切です。「システムのパーティションをどのように分割す
+べきか？」という疑問に対する解答は、「それこそまさに必要とする程度で」というものです。
+答えはアプリケーションによっては異なるでしょう。普遍的な解答というものは存在しません。
+システムのパーティションをどのように区切るべきか、ということについて自信がないのであれ
+ば、こちらの考察（\textbf{「4.7 - OpenBSD のインストールにはどのぐらいのスペースが必要
+とされるのでしょうか？」}）を見てください。この例のシステムでは、１７ギガバイト以上の容
+量がOpenBSD に使用可能となっています。多量のスペースですし、その大部分が必要になるだろ
+う、とは思えません。ですから、絶対最小値となるサイズを意図的に選ぶことはないでしょう。
+未使用スペースが１キロバイトでは少なすぎるので、２、３００メガバイトを割り当てることに
+しましょう。
+
+ルート・ディスク上では、「a」パーティションは root ファイルシステム（/）として作成され
+なければなりません。「a」パーティション無しではインストール・プロセスを開始することはで
+きません。swap パーティション、「b」パーティション、も設けたくなるでしょう。もっとも、
+実メモリが満杯になることは決してないだろう、と確信しているのなら、swap パーティションを
+差し引いておくこともできますけれども。「b」パーティションがルート・ディスク上に存在す
+るのであれば、スワップ領域として自動的に使われるでしょう。他のディスク上の swap パーティ
+ションは /etc/fstab に手動で加えなければならないでしょう。少しばかり考えれば、swap パー
+ティションといっしょに推奨されている個々のファイルシステム（/、/tmp、/var、/usr、
+/home）の作成を可能にするのに充分な領域（パーティション）が決まってきます。
+
+\begin{itemize}
+ \item \textbf{wd0a: /}(root) - 150M。充分以上の容量であるべきです。
+ \item \textbf{wd0b:}(swap) 300M。
+ \item \textbf{wd0d: /tmp} - 120M。/tmp はソフトウェアをビルドするために使われる領域です。
+              １２０メガバイトもあればだいたいの用にはおそらく足りるでしょう。
+ \item \textbf{wd0e: /var} - 80M。このシステムがウェブ・サーバあるいはメール・サーバと
+              なる予定であったなら、このパーティションはもっと大きくしなければならなかっ
+              たでしょうが、しかし、今回のところは、そのような用途のためにこの領域を作
+              成しているのではありません。
+ \item \textbf{wd0g: /usr} - 6G。二、三のユーザー用アプリケーションをロードしたりするの
+              に加えて、求められれば、あるいは必要となれば、ソースからシステムをアップ
+              デートしたり再構築したりすることができるくらいには充分な大きさをこのパー
+              ティションにもたせたい、と考えています。ポート・ツリーも同様にこの領域に
+              できますし、ポートが構築されるまえから、ほぼ 250M のスペースを取るでしょ
+              う。プレビルド・パッケージよりむしろポートを利用してソースから多くのアプ
+              リケーションをビルドすることを計画していたのであれば、この領域にもっとた
+              くさんのスペースがほしくなるかもしれません。
+ \item \textbf{wd0h: /home} - 4G。この領域がいろいろなユーザー用ファイルのスペースになります。
+\end{itemize}
+
+さて、上記の領域を加えたとしても、６ギガバイト以上のスペースが未使用であることがわかる
+でしょう！未使用のスペースは何の害もありませんし、必要があるとき、将来的には、拡張を可
+能にする柔軟性をもたらしてくれます。より多くの /tmp が必要となったなら？ 新しいパーティ
+ションを未使用のスペースに作成して、その新しいパーティションを newfs(8) でフォーマット
+し、/etc/fstab を変更して /tmp にマウントしてください。問題解決です。
+
+\begin{verbatim}
+  > p m
+  #             size        offset  fstype [fsize bsize  cpg]
+  OpenBSD area: 1537.5M-19092.9M; size: 17555.4M; free: 17555.4M
+    c:      19092.9M          0.0M  unused      0     0
+    i:       1498.7M          0.0M  MSDOS
+  > a a
+  offset: [3148740] Enter
+  size: [35953470] 150m
+  Rounding to cylinder: 321300
+  FS type: [4.2BSD] Enter
+  mount point: [none] /
+  > a b
+  offset: [3470040] Enter
+  size: [35632170] 300m
+  Rounding to cylinder: 626535
+  FS type: [swap] Enter
+  > a d
+  offset: [4096575] Enter
+  size: [35005635] 120m
+  Rounding to cylinder: 257040
+  FS type: [4.2BSD] Enter
+  mount point: [none] /tmp
+  > a e
+  offset: [4353615] Enter
+  size: [34748595] 80m
+  Rounding to cylinder: 176715
+  FS type: [4.2BSD] Enter
+  mount point: [none] /var
+  > a g
+  offset: [4530330] Enter
+  size: [34571880] 6g
+  Rounding to cylinder: 12594960
+  FS type: [4.2BSD] Enter
+  mount point: [none] /usr
+  > a h
+  offset: [17125290] Enter
+  size: [21976920] 4g
+  Rounding to nearest cylinder: 8401995
+  FS type: [4.2BSD] Enter
+  mount point: [none] /home
+  > p m
+  OpenBSD area: 1537.5M-19092.9M; size: 17555.4M; free: 6628.4M
+  #             size        offset  fstype [fsize bsize  cpg]
+    a:           156.9M          1537.5M  4.2BSD   2048 16384    1 # /
+    b:           305.9M          1694.4M    swap
+    c:         19092.9M             0.0M  unused      0     0
+    d:           125.5M          2000.3M  4.2BSD   2048 16384    1 # /tmp
+    e:            86.3M          2125.8M  4.2BSD   2048 16384    1 # /var
+    g:          6149.9M          2212.1M  4.2BSD   2048 16384    1 # /usr
+    h:          4102.5M          8362.0M  4.2BSD   2048 16384    1 # /home
+    i:          1537.4M             0.0M   MSDOS
+  > q
+  Write new label?: [y] Enter
+\end{verbatim}
+
+わたしたちが無視してきたかのように見えた \textit{c} パーティションがあることに気付いた
+でしょう。このパーティションはハードディスク全体を示しています。「c」パーティションを修
+正しようと試みないでください。\textit{i} パーティションを設定していなかったことにもまた
+気付いたでしょう。これが先行して存在していた Windows 2000 パーティションなのです。パー
+ティションには任意の特定の文字が与えられているのではありません。\textit{a}(root) と
+\textit{b}(swap)、\textit{c}(ディスク全体) を除けば、残りのパーティションには（文字
+\textit{p} は飛ばしますが）希望したとおりの文字が使用可能です。
+
+\subsubsection*{マウント・ポイントの設定とファイルシステムのフォーマット}
+
+さて、マウント・ポイントの設定という最後の箇所にやって来ました。disklabel(8) を通じて
+マウント・ポイントを設定したならば、マウント・ポイントの選択を確認することでこのステッ
+プはできあがります。別のやり方でも、マウント・ポイントを指定することがここではできます。
+
+\begin{verbatim}
+  Mount point for wd0d (131584 KBytes)? (or 'none' or 'done') [/tmp] Enter
+  Mount point for wd0e (90624 KBytes)? (or 'none' or 'done') [/var] Enter
+  Mount point for wd0g (6656 MBytes)? (or 'none' or 'done') [/usr] Enter
+  Mount point for wd0h (4096 MBytes)? (or 'none' or 'done') [/home] Enter
+  Mount point for wd0d (131584 KBytes)? (or 'none' or 'done') [/tmp] done
+  No more disks to initialize.
+ 
+  OpenBSD filesystems:
+  wd0a /
+  wd0d /tmp
+  wd0e /var
+  wd0g /usr
+  wd0h /home
+
+  The next step *DESTROYS* all existing data on these partitions!
+  Are you really sure that you're ready to proceed? [no] y
+  newfs: reduced number of fragments per cylinder group from 20080 to 19992 to enl
+  arge last cylinder group
+  /dev/rwd0a: 156.9MB in 321300 sectors of 512 bytes
+  5 cylinder groups of 39.05MB, 2499 blocks, 5120 inodes each
+  newfs: reduced number of fragments per cylinder group from 16064 to 15992 to enl
+  arge last cylinder group
+  /dev/rwd0d: 125.5MB in 257040 sectors of 512 bytes
+  5 cylinder groups of 31.23MB, 1999 blocks, 4096 inodes each
+  newfs: reduced number of fragments per cylinder group from 11040 to 10992 to enl
+  arge last cylinder group
+  /dev/rwd0e: 86.3MB in 176712 sectors of 512 bytes
+  5 cylinder groups of 21.47MB, 1374 blocks, 2816 inodes each
+  /dev/rwd0g: 6149.9MB in 12594960 sectors of 512 bytes
+  31 cylinder groups of 202.47MB, 12958 blocks, 25984 inodes each
+  /dev/rwd0h: 4102.5MB in 8401992 sectors of 512 bytes
+  21 cylinder groups of 202.47MB, 12958 blocks, 25984 inodes each
+  /dev/wd0a on /mnt type ffs (rw, asynchronous, local, ctime=Tue Oct 21 00:36:28 2
+  008)
+  /dev/wd0h on /mnt/home type ffs (rw, asynchronous, local, nodev, nosuid)
+  /dev/wd0d on /mnt/tmp type ffs (rw, asynchronous, local, nodev, nosuid)
+  /dev/wd0g on /mnt/usr type ffs (rw, asynchronous, local, nodev)
+  /dev/wd0e on /mnt/var type ffs (rw, asynchronous, local, nodev)
+\end{verbatim}
+
+マウント・ポイントをインストーラーが重ねて尋ねてくるのはなぜなのか、を疑問に思うかもし
+れません。どのようなエラーでも、あるいはマウント・ポイントに欠落があっても、そこから回
+復することを、ディスクレーベル作成のあいだは、この手続きが可能にしているのです。たとえ
+ば、重複するマウント・ポイントが入力されたとしても、ディスクレーベル設定のあいだは、イ
+ンストール・プロセスが自動的に削除します。disklabel プログラムは上記のような重複した入
+力が行われたとしても放っておくでしょうけれども、disklabel プログラムが終了したあと、先
+に述べたように、そのような重複はチェックされるはずです。「Are you really sure that you
+are ready to proceed?」という質問の解答として「no」が既定値とされていることに注目してく
+ださい。「no」を選んだのであれば、シェルに単に入ることになり、「install」と打つことで、
+あるいはブート用ディスクでまた再起動することで、再びインストールを開始することができま
+す。
+
+この時点で、すべてのファイルシステムが目的どおりにフォーマットされるでしょう。フォーマッ
+トにかかる時間はパーティションのサイズとディスクのスピードに左右されます。
+
+\subsection{システムのホストネームの設定}
+
+システムのホストネームをここで設定しなければなりません。DNS ドメイン名といっしょに、
+/etc/myname ファイルとして、この値は保存されるでしょう。通常の起動時にシステムのホスト
+ネームを設定するために、このファイルが使用されます。システムのドメイン名を設定しなかっ
+たならば、「my.domain」というデフォルトの値が使われるでしょう。
+
+この名前を設定することは重要です、というのも、インストール後の最初の起動時、システムの
+暗号キーが生成されるとき、その名前が使われるからです。ネットワークが構成されているにし
+ろいないにしろ、この暗号キーの生成が生じます。
+
+\begin{verbatim}
+  System hostname (short form, e.g. 'foo'): puffy
+\end{verbatim}
+
+\subsection{ネットワークの設定}
+
+そろそろネットワークを設定します。FTP または NFS ベースのインストールを予定しているので
+あれば、ここでの入力情報がそのインストール方式のベースとなっていることを考慮すると、ネッ
+トワークの設定することになるはずです。インストール・プロセスのなかのネットワークの設定
+部分のリハーサルをここでは行います。この例では、あるひとつのインターフェイス（fxp0）が
+DHCP を使うように設定されているモデムに関係付けられるでしょう。他のインターフェイスはイ
+ンターナル・ネットワークに関係付けられ静的に構成されるでしょう。
+
+\begin{verbatim}
+  Configure the network? [yes] Enter
+  Available interfaces are: fxp0 xl0.
+  Which one do you wish to initialize? (or 'done') [fxp0] xl0
+  Symbolic (host) name for xl0? [puffy] Enter
+  The media options for xl0 are currently
+          media: Ethernet autoselect (100baseTX full-duplex)
+  Do you want to change the media options? [no] Enter
+  IPv4 address for xl0? (or 'dhcp') 192.168.1.254
+  Netmask? [255.255.255.0] Enter
+  IPv6 address for xl0? (or 'rtsol' or 'none') [none] Enter
+  Available interfaces are: fxp0.
+  Which one do you wish to initialize? (or 'done') [fxp0] Enter
+  Symbolic (host) name for fxp0? [puffy] Enter
+  The media options for fxp0 are currently
+          media: Ethernet autoselect (10baseT half-duplex)
+  Do you want to change the media options? [no] Enter
+  IPv4 address for fxp0? (or 'none' or 'dhcp') dhcp
+  Issuing hostname-associated DHCP request for fxp0.
+  DHCPDISCOVER on fxp0 to 255.255.255.255 port 67 interval 1
+  DHCPOFFER from 73.34.136.1
+  DHCPREQUEST on fxp0 to 255.255.255.255 port 67
+  DHCPACK from 73.34.136.1
+  bound to 69.241.244.76 -- renewal in 1800 seconds.
+  IPv6 address for fxp0? (or 'rtsol' or 'none') [none] Enter
+  No more interfaces to initialize.
+  DNS domain name? (e.g. 'bar.com') [my.domain] example.com
+  DNS nameserver? (IP address or 'none') [68.87.77.130 68.87.72.130 68.87.75.194] Enter
+  Use the nameserver now? [yes] Enter
+  Default route? (IP address, 'dhcp' or 'none') [dhcp] Enter
+  Edit hosts with ed? [no] Enter
+  Do you want to do any manual network configuration? [no] Enter
+\end{verbatim}
+
+\begin{quotation}
+ \noindent\textbf{注意事項:} インターフェイスがひとつだけであれば、インストール時に、
+ DHCP を利用するように容易に設定できるでしょう。ひとつよりも多い数のインターフェイスが
+ DHCP を使うように設定することを試みるのであれば、エラーに出くわすことになるでしょう。
+ インストール後に、追加分のインターフェイスを手動で設定しなければならないでしょう。
+\end{quotation}
+
+ここで、root アカウント用のパスワードを設定します。
+
+\begin{verbatim}
+  Password for root account? (will not echo) pAssWOrd
+  Password for root account? (again) pAssWOrd
+\end{verbatim}
+
+root アカウントには安全なパスワードを使用してください。システムを起動したあと、他のユー
+ザー・アカウントを作成することになるでしょう。以下は passwd(1) のマニュアルから。
+
+\begin{quotation}
+ \noindent 新しいパスワードは最低でも六文字であるべきで、すべてがアルファベット文字であっ
+ てはなりません。パスワードの文字列のトータルの長さは環境変数 \_PASSWORD\_LEN （いまのと
+ ころは１２８文字）以下にしなければなりません。小文字と大文字、数字、特殊文字（メタ・キャ
+ ラクタ）を混ぜ合わせることが奨励されています。
+\end{quotation}
+
+\subsection{インストール・メディアの選択}
+
+ネットワークの準備が整えば、インストール・スクリプト上で、ネットワーク設定を手動で調節
+する機会が与えられます。
+
+続いて、インストール・メディアを選択することになります。インストール・メディアの選択肢
+は以下のようにリストアップされます。
+
+\begin{verbatim}
+  Let's install the sets!
+  Location of sets? (cd disk ftp http or 'done') [cd] Enter
+  Available CD-ROMs are: cd0.
+\end{verbatim}
+
+この例では CD-ROM からインストールします。CD-ROM と判別されたコンピュータ上のデバイスの
+一覧が提示されます。たいていの場合 CD-ROM はひとつだけでしょう。必要に応じて、OpenBSD
+をインストールするのにどのデバイスを選んだか、を確認してください。
+
+\begin{quotation}
+ \noindent \textbf{注意事項:} すべてのプラットフォームがすべての選択肢をサポートしてい
+ るわけではありません。この場合だと、OpenBSD/i386 プラットフォームは NFS インストール
+ をサポートしていません。ですから NFS インストールはこの一覧に表示されていないのです。
+\end{quotation}
+
+\begin{verbatim}
+  Available CD-ROMs are: cd0.
+  Which one contains the install media? (or 'done') [cd0] Enter
+  Pathname to the sets?  (or 'done') [4.5/i386] Enter
+\end{verbatim}
+
+ここで、どのディレクトリにインストール用ファイルがあるのか、を指定するように入力を促さ
+れます。オフィシャルの CD-ROM または install45.iso から構築された CD上では、それらのファ
+イルは 4.5/i386/ にあります。
+
+\subsection{ファイル・セットの選択}
+
+さて、どのファイルのセットをインストールするか、そろそろ選びましょう。これらのファイル
+の解説は次節にあります。インストール・プログラムが見つけたファイルがスクリーン上に表示
+されるでしょう。インストールしたいファイルを指定するのがこの作業の内容となります。デフォ
+ルト（初期設定）では、X 関係以外のすべてのファイルはインストールするものとして選択済み
+です。OpenBSD を走らせるのに必要とされる最小最低限度までにインストールするファイル（お
+そらくbase45.tgz と etc45tgz、bsd でしょう）を絞る上級者がなかにはいるかもしれません。
+初期設定のとおりのファイル・セットかすべてのファイル・セットをインストールしようと大半
+のひとは思うでしょう。フル・インストールの例が下記になります。
+
+\begin{verbatim}
+  Select sets by entering a set name, a file name pattern or 'all'. De-select
+  sets by prepending a '-' to the set name, file name pattern or 'all'. Selected
+  sets are labeled '[x]'.
+
+          [X] bsd
+          [X] bsd.rd
+          [ ] bsd.mp
+          [X] base45.tgz
+          [X] etc45.tgz
+          [X] misc45.tgz
+          [X] comp45.tgz
+          [X] man45.tgz
+          [X] game45.tgz
+          [ ] xbase45.tgz
+          [ ] xetc45.tgz
+          [ ] xshare45.tgz
+          [ ] xfont45.tgz
+          [ ] xserv45.tgz
+  Set name? (or 'done') [bsd.mp] all
+
+          [X] bsd
+          [X] bsd.rd
+          [X] bsd.mp
+          [X] base45.tgz
+          [X] etc45.tgz
+          [X] misc45.tgz
+          [X] comp45.tgz
+          [X] man45.tgz
+          [X] game45.tgz
+          [X] xbase45.tgz
+          [X] xetc45.tgz
+          [X] xshare45.tgz
+          [X] xfont45.tgz
+          [X] xserv45.tgz
+\end{verbatim}
+
+幾通りもの小洒落たやり方をここで実行することができます。気が変わったなら、「-x*」と打
+てば、すべての X コンポーネントを除去できるでしょう。この場合では、すべてのファイル・
+セットをロードすることになっています。もっと少ない数のセットでシステムは走るとはいえ、
+初期設定通りのセットで始動すること、あるいはすべてのセットをインストールするかの、どち
+らかが推奨されています。\textbf{「4.6 - インストールにはどのファイルが必要ですか？」}
+を見れば、ファイル・セットの選択についてのより多くの詳細を得ることができます。
+
+インストールしたいファイル・セットを首尾よく絞ったらすぐに、これらのファイル・セットを
+ほんとうに解凍・展開したいのか、そしてインストールしてもよいのか、を確認するよう入力を
+促されます。プログレス・バーが表示され、そのインストール作業にどれくらいの時間がかかっ
+ているかを通知し続けてくれるでしょう。OpenBSD をインストールするシステムとインストール
+するファイル、ソースとなるメディアの速度に、作業期間は大きく左右されます。この作業箇所
+では二、三分から数時間かかるでしょう。
+
+\begin{verbatim}
+  Set name? (or 'done') [done] Enter
+  Ready to install sets? [yes] Enter
+  Getting bsd ...
+  100% |**************************************************|  6539 KB    00:01
+  Getting bsd.rd ...
+  100% |**************************************************|  5461 KB    00:01
+  Getting bsd.mp ...
+  100% |**************************************************|  6558 KB    00:01
+  Getting base45.tgz ...
+  100% |**************************************************| 46941 KB    00:29
+  Getting etc45.tgz ...
+  100% |**************************************************|   501 KB    00:00
+  Getting misc45.tgz ...
+  100% |**************************************************|  2866 KB    00:01
+  Getting comp45.tgz ...
+  100% |**************************************************| 87874 KB    00:43
+  Getting man45.tgz ...
+  100% |**************************************************|  8032 KB    00:07
+  Getting game45.tgz ...
+  100% |**************************************************|  2555 KB    00:01
+  Getting xbase45.tgz ...
+  100% |**************************************************|  9761 KB    00:05
+  Getting xetc45.tgz ...
+  100% |**************************************************| 75214       00:00
+  Getting xshare45.tgz ...
+  100% |**************************************************|  2698 KB    00:05
+  Getting xfont45.tgz ...
+  100% |**************************************************| 34745 KB    00:16
+  Getting xserv45.tgz ...
+  100% |**************************************************| 19478 KB    00:09
+  Location of sets? (cd disk ftp http or 'done') [done] Enter
+\end{verbatim}
+
+この時点で、（カスタム・ファイル・セットを含む）別のソースから追加のファイルを望めば取
+得できます。必要なファイルをすべてインストールしたのであれば、「done」と打ってください。
+
+\subsection{最後の仕上げ}
+
+続いて、インストールしたシステムの設定について二、三の質問を尋ねられることになります。
+起動時に sshd(8) を始動させるかどうか、というのが一番目の質問です。通常は、sshd(8) を
+走らせたい、と思うでしょうが、場合によっては、そう思わないかもしれません。アプリケーショ
+ンが sshd(8) が必要としないのであれば、理屈のうえではちょっとしたセキュリティの優位性
+が得られます。
+
+\begin{verbatim}
+  Start sshd(8) by default? [yes] y
+\end{verbatim}
+
+（あとで気が変われば、/etc/rc.conf.local または /etc/rc.conf を修正してください）。
+
+OpenNTPD を起動時に走らせるかどうか、を選択することになるでしょう。コンピュータ内の時計
+を正確に同期させる低負荷な手段が OpenNTPD です。多くのひとの用途には初期設定（デフォル
+トの設定）通りでも差し支えないでしょう。
+
+\begin{verbatim}
+  Start ntpd(8) by default? [no] yes
+  NTP server? (hostname or 'default') [default] Enter
+\end{verbatim}
+
+ローカル・タイム・サーバがあるのであれば、そのサーバをここで指定することができます。
+「default」を選ぶと、無料でアクセスできるタイム・サーバの膨大なコレクション、
+pool.ntp.org を利用することになります。（あとで気が変わったのならば、
+/etc/rc.conf.local そして・または /etc/ntpd.conf を修正してください）。
+
+あるプラットフォーム上では、このシステムで X を走らせるつもりなのか、とここで問われるで
+しょう。「Y」と答えれば、「machdep.allowaperture=1」または「machdep.allowaperture=2」と
+いう行が、プラットフォームに応じて、/etc/sysctl.conf に盛り込まれるよう修正されるでしょ
+う。いくつかのプラットフォームでは、この X に関する質問をされることはまったくないでしょ
+う。システム上で X を走らせるつもりがないか、あるいは何ともいえないのであれば、ここで
+「N」と答えてください。あとで X を走らせる必要が出てきたとしても、/etc/sysctl.conf を編
+集することでこの設定は簡単に変更することができるからです。xf86(4) という穴のあるこのド
+ライバを無効にすることで、セキュリティの優位性が見込まれることになります。最新のビデオ・
+カードに積まれたグラフィック・エンジンは、プロセッサの管理の限界を超えて、メモリを改変
+するおそれがあるからです。
+
+\begin{verbatim}
+  Do you expect to run the X Window System? [no] y
+\end{verbatim}
+
+つぎに、標準的なキーボードとモニタではなく、シリアル・コンソールをこのコンピュータで使
+用したいか、と尋ねられるでしょう。「yes」を選んでそれに続くいくつかの簡単な質問に答え
+れば、/etc/boot.conf と /etc/ttys が適切に編集されるでしょう。大半のユーザーは初期設定
+通り \textbf{no} をここで選ぶとよいでしょう。
+
+\begin{verbatim}
+  Change the default console to com0? [no] Enter
+\end{verbatim}
+
+タイム・ゾーンの入力が最後の作業になります。マシンが作動する地域に応じて、たぶん、いく
+つかの等しく正しい答えがあります。以下の例では、US/Eastern というタイム・ゾーンを使うこ
+とにしていますが、EST5EDT または US/Michigan を利用しても同じ結果を得ることができます。
+プロンプトで \textbf{?} と打つと、さまざまなタイム・ゾーンの選択肢が示されるでしょう。
+
+\begin{verbatim}
+  Saving configuration files......done.
+  Generating initial host.random file ......done.
+  What timezone are you in? ('?' for list) [Canada/Mountain] ?
+  Africa/      Chile/       GB-Eire      Israel       NZ-CHAT      UCT
+  America/     Cuba         GMT          Jamaica      Navajo       US/
+  Antarctica/  EET          GMT+0        Japan        PRC          UTC
+  Arctic/      EST          GMT-0        Kwajalein    PST8PDT      Universal
+  Asia/        EST5EDT      GMT0         Libya        Pacific/     W-SU
+  Atlantic/    Egypt        Greenwich    MET          Poland       WET
+  Australia/   Eire         HST          MST          Portugal     Zulu
+  Brazil/      Etc/         Hongkong     MST7MDT      ROC          posix/
+  CET          Europe/      Iceland      Mexico/      ROK          posixrules
+  CST6CDT      Factory      Indian/      Mideast/     Singapore    right/
+  Canada/      GB           Iran         NZ           Turkey       zone.tab
+  What timezone are you in? ('?' for list) [Canada/Mountain] US
+  What sub-timezone of 'US' are you in? ('?' for list) ?
+  Alaska          Central         Hawaii          Mountain        Samoa
+  Aleutian        East-Indiana    Indiana-Starke  Pacific
+  Arizona         Eastern         Michigan        Pacific-New
+  Select a sub-timezone of 'US' ('?' for list): Eastern
+  Setting local timezone to 'US/Eastern'...done.
+\end{verbatim}
+
+極めて正確な時間が気に懸かるのであれば、\textbf{「8.24 - 二十数秒ごとに時計がオフにな
+るのはなぜですか？」}を読んでみたくなるかもしれません。/dev ディレクトリをシステムが作
+成するところ（とりわけ小容量の RAM であれば、この作成にはちょっと時間がかかるかもしれ
+ません）、そのあとブート区画をインストールするところが、最終段階となります。
+
+\begin{verbatim}
+  Making all device nodes...done.
+  Installing boot block...
+  boot: /mnt/boot
+  proto: /usr/mdec/biosboot
+  device: /dev/rwd0c
+  /usr/mdec/biosboot: entry point 0
+  proto bootblock size 512
+  /mnt/boot is 3 blocks x 16384 bytes
+  fs block shift 2; part offset 3148740; inode block 24, offset 1832
+  using MBR partition 1: type 166 (0xa6) offset 3148740 (0x300bc4)
+  done.
+
+  CONGRATULATIONS! Your OpenBSD install has been successfully completed!
+  To boot the new system, enter halt at the command prompt. Once the
+  system has halted, reset the machine and boot from the disk.
+  # halt
+  syncing disks... done
+
+  The operating system has halted.
+  Please press any key to reboot.
+\end{verbatim}
+
+OpenBSD がインストールされ、最初の起動の準備がここで整いました。しかし、そのまえに、す
+ることがあります……
+
+\subsubsection*{再起動するまえに}
+
+この時点で、システムはインストールされており、再起動の準備も整っていて、サービスの設定
+もされています。最初の起動をするまえに、エラッタのページ
+（http://www.openbsd.org/errata.html）をチェックして、影響を及ぼすような何らかのバグが
+あるかどうか、を見てみるのは、賢いやり方でしょう。
+
+「最初の起動まえに」設定に手を入れる裏技があります。
+
+\begin{verbatim}
+  # /mnt/usr/sbin/chroot /mnt
+\end{verbatim}
+
+うえのように、シェル・プロンプトで走らせます。新しくインストールしたシステムが正常な再
+起動を行った際に、マウント・ポイントがそれがあるべき場所にあるように、これで設定されま
+す。ユーザーを追加したり、マウント・ポイントを変更したり、などの基本的なシステムの設定
+をここで行うことができます。
+
+\subsubsection*{再起動したあと}
+
+システムをインストールしたあとに最初に読むべきもののひとつが afterboot(8) のマニュアル
+です。
+
+以下の有益な文書があることもまた知っておいてもよいかもしれません。
+
+\begin{description}
+ \item[OpenBSD でのユーザーの追加]
+              - 「10.9 - ユーザーを追加したり削除したりする
+              最良の方法は何ですか？」
+ \item[イニシャル・ネットワークの準備]
+              - 「6.2 - ネットワークの構成」
+ \item[よく知られている便利なコマンドの Man ページ]
+              - 「2.3 - マニュアル・ページ」
+ \item[OpenBSD のパッケージとソフトウェア・インストールのためのポート・システム]
+              - 「15 - OpenBSD のパッケージとポート・システム」
+\end{description}
+
+\subsubsection*{最後に…}
+
+dmesg のコピーを OpenBSD の開発者に送ってくれるようお願いします。開発者にとっても、最終
+的には、すべてのユーザーにとっても、これは喜ばれることになります。
+
+\section{インストールにはどのファイルが必要ですか？}
+
+OpenBSD のインストールの全体は、たくさんの数の別個のファイル・セットにまで解きほぐせま
+す。あらゆるアプリケーションはあらゆるファイル・セットを必要としているわけではありませ
+ん。各ファイル・セットをここで概観してみます。
+
+\begin{description}
+ \item[bsd] これがカーネルになります。\textbf{必要}。
+ \item[bsd.mp] マルチ・プロセッサ（SMP）・カーネル（いくつかのプラットフォームでは必要）
+ \item[bsd.rd] RAM ディスク・カーネル。
+ \item[base45.tgz] \textbf{必要}とされる OpenBSD の基本的なシステム。
+ \item[etc45.tgz] \textbf{必要}とされる /etc 内のすべてのファイル。
+ \item[comp45.tgz] コンパイラとそのツール、ヘッダ、ライブラリ。\textbf{推奨}。
+ \item[man45.tgz] man ページ。\textbf{推奨}。
+ \item[misc45.tgz] セットアップされた文書類、misc info。
+ \item[game45.tgz] OpenBSD 用ゲーム。
+ \item[xbase45.tgz] X11 用の基礎的ライブラリとユーティリティ。
+ \item[xetc45.tgz] /etc/X11 と /etc/fonts 内の設定ファイル。
+ \item[xfont45.tgz] X11 フォント・サーバとフォント。
+ \item[xserv45.tgz] X11 の X サーバ。
+ \item[xshare45.tgz] X 用の man ページ、ロケールの設定、インクルード・ファイルなど。
+\end{description}
+
+etc45.tgz と xetc45.tgz は、完全なインストール時を除いては、アップグレードの際に再びイ
+ンストールされることはありません。ですから、あなたが施したカスタマイズ内容が失われるこ
+とはないでしょう。/etc と /dev、/var は手動でアップデートしなければならないでしょう。
+
+\subsection*{アプリケーションのために xbase45.tgz をインストールしなければならないのはなぜですか？}
+
+たとえ X を走らせるつもりがないにせよ、いくつかのサード・パーティーのパッケージをシステ
+ムにインストールするには、xbase45.tgz のライブラリ、またはユーティリティーが必要になり
+ます。xbase45.tgz をインストールすることでこのようなアプリケーションの作動条件を、通常
+は、あっさり満たすことができます。
+
+\begin{itemize}
+ \item xbase45.tgz をインストールしただけで、何らかのプログラムがシステム上で実行され
+       るというようなことにはなりません。
+ \item xbase45.tgz をシステムにインストールしただけで、対外的セキュリティ問題のリスク
+       が変わるわけではありません。
+ \item 誰かがシステム上にすでにいるとして、そういうひとたちは、十中八九、望みのものを何
+       でもインストールするでしょう。ですから、xbase45.tgz ファイル・セットがあろうとな
+       かろうと、そういう状況に目立った変化が現れるわけではありません。
+ \item アプリケーションが必要としている xbase45.tgz の部分しか走りません。
+ \item xbase45.tgz が必要とする容量は比較的控え目にいって、およそ３０メガバイトです。
+\end{itemize}
+
+インストールするアプリケーションに必要なファイルだけを xbase45.tgz を綿密に調べて取り
+出す努力をして、たくさんの時間を無駄にするひとたちがなかにはいます。この努力は無意味で
+あるばかりではなくて、アップグレードする度に繰り返されなければならないであろう努力でも
+あるのです。こういうことで、システムを正しくアップグレードし損ない、\textbf{現実}のセキュリティ
+問題を生む結果に、おそらく、至ることになるのです。
+
+xbase45.tgz が必要であれば、単にインストールだけしてください。ほんとうに必要としている
+アプリケーション以外の危険な何かをもたらしたりはしません。注意しておきたいのは、ソース
+からのコンパイルはインストールを行うためにしばしば X から多くのものを必要とすることが
+ある、ということです。ですが、上述したことは依然あてはまります。
+
+\section{OpenBSD のインストールにはどのぐらいのスペースが必要とされるのでしょうか?}
+
+システムの活用の仕方に基づき、答えは、明らかに、大きく変わります。しかしながら、下記の
+数字はスターティング・ポイントとして利用できるでしょう。
+
+\begin{verbatim}
+  (root)             60MB
+  /usr               500MB (no X) or 660MB (with X)
+  /var               25MB
+  /tmp               50MB
+  swap               32MB
+\end{verbatim}
+
+フル・インストールのために推奨されているファイルシステムのサイズの最小限の値は上記の
+ようになります。インターネットにつないだりするような（しかし、その他の多くの作業は見込
+めませんが）典型的な家庭用システムの運営を可能にするのに充分な余分なスペースを、うえの
+数字は含意しています。
+
+しかしながら、以下のことを念頭に入れておいてください。
+
+\begin{itemize}
+ \item 上記の数字は最小限の値です。ディスクの容量は現在では割安ですし、可能なかぎり小さ
+       なディスクにシステムを無理に押し込もうという試みはたいてい努力に見合いません。
+       特定の用途のアプリケーションに合わせて、うえの数字をもっと小さくすることができ
+       ますが、実験してみる必要はあるでしょう。
+ \item 上記の数字はポート・ツリーのスペースを考慮していません。
+ \item かなりの数のサード・パーティーのソフトウェアをインストールするつもりであれば、
+       /usr パーティションをもっと大きくしてください。どれぐらいの大きさにするかは、も
+       ちろんのこと、アプリケーションに依ります。
+ \item たくさんのメイルやウェブ・ページ（/var/mail そして /var/www に、各々、保存されま
+       す）を扱うのであれば、/var パーティションを著しく大きくしなければならないでしょ
+       う。あるいはそういったメイルやウェブ・ページを別個のパーティションに入れるべきで
+       しょう。
+ \item たくさんのログを生成するマルチユーザー・システムを作るのであれば、/var パーティ
+       ションをさらにもっと大きくすべきでしょう。あるいは別個のログ・パーティション
+       （/var/log）を作成すべきでしょう。
+ \item カーネルとシステムのソースからの再構築を計画しているのなら、/usr パーティション
+       を極めて大きくすべきでしょう。４ギガバイトの容量があれば悪くはありません。ソース
+       からポートをコンパイルするのに、/usr そして /tmp パーティション上の莫大な量のス
+       ペースがとられることがあります。これが、ソースからビルドするよりむしろコンパイル
+       済みのパッケージを利用することを提案する理由のひとつです。
+ \item ポートのコンパイルの際に /tmp パーティションが使われます。何よりも、/tmp パーティ
+       ションをどのぐらいの大きさにするかはそこで行うことに依るのです。５０メガバイトも
+       あればたいていは充分かもしれませんが、いくつかの巨大なアプリケーションは１００
+       メガバイトかそれ以上の /tmp のスペースを必要とするかもしれません。
+ \item ルート・ドライブの「b」パーティションはスワップ・パーティションに自動的になりま
+       す。スワップ・パーティションはメイン・システムの RAM の二倍にすべきという古い経
+       験則に多くのひとたちが従っています。このような経験則は馬鹿げたものです。最新のシ
+       ステム上では、\textbf{たくさん}のスワップ領域をもつことよりも、システムが決して
+       スワップしないことが大半のひとたちにとって好ましいのです。RAM とスワップの容量を
+       超えてシステムを運営すべきではありませんし、スワップ領域の必要がないように充分な
+       容量の RAM を、システムに通常はむしろもたせるでしょう。ハード・ディスクの代わり
+       にフラッシュ・デバイスを使っているのであれば、スワップ・パーティションはおそらく
+       全くいらないでしょう。必要に見合った量のスワップ・パーティションを使ってください。
+       スワップのサイズを見当違いしたとしても、/etc/fstab に代わりのスワップ・パーティ
+       ションを追加したり、スワップ領域をファイルに割り当てたりすることが、あとでもで
+       きます。
+ \item crash(8) のイベントの際に吐き出されるシステムのコア・ダンプを保存するためにスワッ
+       プと /var パーティションが使われます。これを考慮に入れれば、システムがもっている
+       であろうメイン・メモリの容量よりひとまわり大きなスワップ・スペースがあるべきでしょ
+       う。再起動の際、スワップ・パーティションの内容を /var/crash 内のファイルに
+       savecore(8) は再び保存しようとします。これを優先すれば、このとき生成されるダンプ・
+       ファイルを確保するために充分な\textit{空き}領域を /var パーティションにもたせな
+       ければなりません。現実的に考えてみてください …… １ギガバイトのダンプ・ファイル
+       を眺めたいと思う開発者はほとんどいません。ですから、局所的なクラッシュを調査しよ
+       うと企てていなければ、/var パーティションやスワップの容量不足は心配事にはおそら
+       くなりません。少なくても二、三のエディタはスクラッチのスペースとして/var/tmp を
+       使います。ですから /var/tmp は編集する巨大なファイルと同じくらいかそれ以上に、し
+       ばしば、大きくしなければなりません。５００メガバイトのファイルを編集するつもりな
+       らば、/var または /var/tmp パーティションは、意図していたかもしれないサイズより
+       も、もっと大きくしなければならないでしょう。
+\end{itemize}
+
+ひとつかふたつのファイルシステムにすべてを無理に突っ込むのではなく、分離したファイル・
+システムを使用するのには、いくつかの理由があります。
+
+\begin{itemize}
+ \item \textbf{セキュリティ:} 「nosuid」、「nodev」、「noexec」、「readonly」などという
+       ように、いくつかのファイルシステムに印を付けることができます。これまでに説明し
+       たパーティションを使うのであれば、インストール・プロセスによって、この印付けが
+       完了します。
+ \item \textbf{安定性:} ユーザー、または不正な動作をするプログラムが、書き込み権限（パー
+       ミッション）があれば、不要なデータでファイルシステムを満杯にすることがありま
+       す。別のファイルシステム上で走っている重要なプログラムが、これによって、中断
+       されることはありません。
+ \item \textbf{速度:} 頻繁に書き込まれるファイルシステムはファイル・フラグメントが多少
+       大きくなるかもしれません（幸いにも、OpenBSD が利用するファイルシステムにはファイ
+       ル・フラグメントを極めて大きくする傾向はありません）。
+ \item \textbf{インテグリティ:} あるファイルシステムが破損したとしても、他のファイルシ
+       ステムは依然大丈夫です。
+ \item \textbf{サイズ:} 多くのマシンでは、ブート ROM がカーネルをロードしてくるディスク
+       領域に限度があります。ある場合には、その限度はとても小さいもの（古い 486 マシン
+       だと ５０４メガバイト）かもしれません。他の場合だと、大変大きいかもしれません
+       （たとえば、i386 マシンだと、２あるいは８ギガバイト、１２８ギガバイト）。ルート・
+       パーティション内のどこかにカーネルは結局収まることになるので、ルート・パーティショ
+       ン全体はこの限度内の領域にあるべきです。より多くの詳細を求めるなら、
+       \textbf{「14.7 - 大容量ドライブで OpenBSD を使うにあたっての問題とは何でしょう
+       か？」}を見てください。プラットフォーム（そして特定のマシン）が２ギガバイト以上
+       （あるいはそれ以下）を扱えること知っていなければ、/ パーティションを２ギガバイト以
+       下におさえることは良い方針かもしれません。
+\end{itemize}
+
+パーティションの分割に関してのいくつかの追加的見解は以下のとおりです。
+
+\begin{itemize}
+ \item 実験用のシステムで OpenBSD を初めて試すのであれば、大きな / パーティションやスワッ
+       プは、どのくらいのスペースが必要か、と知るまでは、扱いやすいものになるかもしれま
+       せん。こうすることで、/ と /tmp、/var、/usr、/home へと分離したファイルシステム
+       にデフォルトであるセキュリティ機能の一部を犠牲にすることにはなるでしょう。もっと
+       も、初めてインストールした OpenBSD を大事なシステムにしてしまうひとはいないはず
+       ですけれども。
+ \item インターネットあるいは敵意のある攻撃にさらされているシステムはログを記録するた
+       めに分離された別個の /var （そしておそらく分離した /var/log をも）もつべきです。
+ \item /home パーティションは快適なものにすることができます。新しいバージョンの OS が出
+       た？ /home 以外のすべてを一掃してリロードしてください。/home は手つかずのままに
+       しておいてください。けれども、設定ファイルのコピーをとることは忘れないでくださ
+       い！
+ \item 消去する必要があるかもしれない大量のファイルを蓄積しているであろう個別のパーティ
+       ションは削除してしまうよりも再フォーマットして再作成する方が手っ取り早いでしょう。
+       \textbf{「5.11.5 - チップ: /usr/obj をそれ独自のパーティション上に設置する」}を
+       見てください。
+ \item 何らかの理由でソースからのシステムの再構築を望むのであれば、そのソースは
+       /usr/src に置かれるでしょう。/usr/src 用の分離したパーティションがないのであれ
+       ば、用が足りるスペースが /usr にあることを確認してください。
+ \item よく忘れ去られているつぎのような事実があります。システムをセットアップするとき、
+       ドライブ上のすべてのスペースを割り当てなければならないということは\textbf{ありま
+       せん}！ それは、２０ギガバイト以下の小さな新しいドライブを買うという難問のような
+       ものとわかっているのですから、ドライブのかなりの部分を何にも割り当てずにおいてお
+       くことが有意義であるのは理解できるでしょう。あるパーティションが窮屈になったのな
+       ら、未使用スペースから新しいパーティションを割り当てて、既存のパーティションをそ
+       の新しいパーティションにコピーして、/etc/fstab を変更して新しいパーティションが
+       あるところを指し示して、再マウントすれば、もっと大きなスペースをここで得ることが
+       できます。
+ \item 必要最小限のサイズにギリギリまで近付けてパーティションを作ったなら、あとで、シ
+       ステムをアップグレードしようというときに、おそらく後悔することになるでしょう。
+ \item とても巨大なパーティションを作るのなら、fsck(8) を用いるファイルシステムのチェッ
+       クの実行にはファイルシステムのサイズ１ギガバイトごとに１メガバイトの RAM を必要
+       とすること、そしてその実行には大変な時間の消費を伴うかもしれませんし、あるいは古
+       い遅いシステムに適していないかもしれません（\textbf{「14.7 - 大容量ドライブで
+       OpenBSD を使うにあたっての問題とは何でしょうか？」}もまた参照してください）。
+ \item ユーザーに /var/www （すなわち、個人のウェブ・ページ）への書き込みを許可している
+       のであれば、quota を使ってユーザーが使える容量を制限するために、/var/www を別個
+       のパーティションに置くことが望まれるかもしれません。そうすれば、ユーザーがパー
+       ティションをいっぱいにしても、システムの他の箇所は影響を受けないでしょう。
+ \item daily(8) のマニュアルで説明されているように、/altroot パーティションを作成したく
+       なるかもしれません。このスクリプトは / パーティションの複製を一日ごとに作ること
+       ができ、ルート・パーティションに何か問題が起きていれば、カーネルと /etc 以下の設
+       定ファイルの複製も提供してくれます。明らかに、/altroot パーティションは、少なく
+       とも、/ パーティションと同じくらい大きくしなければなりません。二個目のハード・ディ
+       スク・ドライブがマシンにあって、/ パーティション以外のディスク内の他の部分が、ソ
+       フトウェア raid(8) または dump(8)/restore(8) で定期的に作ったコピーのどちらかと
+       して、別に複製してあるのであれば、一番目のディスクを削除したあとでも二番目のこの
+       ディスクは起動することができます。
+\end{itemize}
+
+\section{OpenBSD のマルチブート}
+
+マルチブートとは、いくつかのオペレーション・システムをひとつのコンピュータ上で動かすこ
+とで、どの OS を起動するか、を選択することも意味しています。取るに足らない作業ではあり
+ません！ 自分自身がやっていることを理解していないと、大容量のデータがコンピュータから消
+え去ることになってしまうかもしれません。空のハード・ディスク・ドライブを使って OpenBSD
+専用マシンに仕立てて、それから主なマシンではない機械上で思い通りの設定を試してみてから、
+よく使う大事なマシン上でマルチブートの設定を試みるよう、新規の OpenBSD ユーザーには
+\textbf{強く}推奨します。\textbf{「FAQ 14」}には OpenBSD の起動プロセスについてより多く
+の情報があります。
+
+四つある\textbf{プライマリ}の MBR パーティションのなかのひとつだけが OpenBSD の起動に
+使うことができます（すなわち、拡張分のパーティションは動かないでしょう）。
+
+ここからはマルチブートのいくつかのオプションについて記載します。
+
+\end{document}
